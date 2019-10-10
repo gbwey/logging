@@ -1,0 +1,57 @@
+name:                logging
+version:             0.1.0.0
+#synopsis:
+#description:
+homepage:            https://github.com/gbwey/logging#readme
+license:             BSD3
+author:              Author name here
+maintainer:          example@example.com
+copyright:           2018 Author name here
+category:            Web
+extra-source-files:
+- README.md
+
+dependencies:
+  - base >= 4.7 && < 5
+  - aeson
+  - bytestring
+  - clock
+  - dhall
+  - directory
+  - extra
+  - fast-logger
+  - formatting
+  - iso8601-time
+  - lens
+  - lens-datetime
+  - mime-mail
+  - monad-logger
+  - mtl
+  - shakespeare
+  - smtp-mail
+  - template-haskell
+  - text
+  - time
+  - unliftio
+  - unliftio-core
+  - either
+
+library:
+  source-dirs: src
+  ghc-options:
+  - -fomit-interface-pragmas
+
+tests:
+  logging-test:
+    main:                Main.hs
+    source-dirs:
+    - src
+    - test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+#    - -fomit-interface-pragmas
+    dependencies:
+    - logging
+    - easytest
