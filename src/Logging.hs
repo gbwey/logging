@@ -255,7 +255,7 @@ fmtLongCrazy = fmtLong <> "." % F.pico
 loadEnvs :: IO TL.Text
 loadEnvs = TL.pack . unlines . map (\(x,y) -> x <> " = " <> y) <$> getEnvironment
 
--- | send an email using 'myemail' which pulls the settings from db.cfg
+-- | send an email using 'myemail' which pulls the settings from log.dhall
 emailMessage :: Email -> Text -> [TL.Text] -> IO ()
 emailMessage email subj bodys =
   sendMail (T.unpack (_eSmtpServer email))
