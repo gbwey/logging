@@ -54,4 +54,5 @@ tests:
 #    - -fomit-interface-pragmas
     dependencies:
     - logging
-    - easytest
+    - tasty
+    - tasty-hunit

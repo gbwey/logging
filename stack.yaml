@@ -2,8 +2,6 @@ resolver: lts-13.25
 
 packages:
 - .
-- location: ../easytest
-  extra-dep: true
 
 extra-deps:
 - dhall-1.26.0

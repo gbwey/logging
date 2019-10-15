@@ -6,7 +6,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 import Logging
-import EasyTest
+import Test.Tasty
+import Test.Tasty.HUnit
 import Control.Lens
 import Data.Maybe
 
@@ -17,12 +18,12 @@ lgempty :: LogOpts
 lgempty = $(loadDhallTH @LogOpts "./test_log_empty.dhall")
 
 main :: IO ()
-main =
-  run $ tests [
-        scope "dir in file" $ expectEq (Just "testdir") (lg ^? lFile . _Just . fDir)
-      , scope "smtpfrom in email" $ expectEq (Just "testsmtpfrom") (lg ^? lEmail . _Just . eSmtpFrom)
-      , scope "stdout in screen" $ expectEq (Just StdOut) (lg ^? lScreen . _Just . sScreenType)
-      , scope "empty file" $ expect $ isNothing $ lgempty ^. lFile
-      , scope "empty email" $ expect $ isNothing $ lgempty ^. lEmail
-      , scope "empty screen" $ expect $ isNothing $ lgempty ^. lScreen
+main = defaultMain $ testGroup "TestPred"
+    [
+        testCase "dir in file" $ (@?=) (Just "testdir") (lg ^? lFile . _Just . fDir)
+      , testCase "smtpfrom in email" $ (@?=) (Just "testsmtpfrom") (lg ^? lEmail . _Just . eSmtpFrom)
+      , testCase "stdout in screen" $ (@?=) (Just StdOut) (lg ^? lScreen . _Just . sScreenType)
+      , testCase "empty file" $ assertBool "a1" $ isNothing $ lgempty ^. lFile
+      , testCase "empty email" $ assertBool "a2" $ isNothing $ lgempty ^. lEmail
+      , testCase "empty screen" $ assertBool "a3" $ isNothing $ lgempty ^. lScreen
      ]
