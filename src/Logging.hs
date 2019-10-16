@@ -5,7 +5,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
@@ -16,7 +15,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveLift #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ViewPatterns #-}
 {- |
@@ -95,12 +93,14 @@ type MLog m = U.MonadUnliftIO m
 -- | 'RL' defines the outer two layers of 'ML'
 type RL e m a = ReaderT e (LoggingT m) a
 
-data LLog = Debug | Info | Warn | Error deriving (TH.Lift, G.Generic, Show, Interpret, Eq, Enum, Bounded, Ord)
+data LLog = Debug | Info | Warn | Error deriving (TH.Lift, G.Generic, Show, Eq, Enum, Bounded, Ord)
 makePrisms ''LLog
+instance Interpret LLog
 
 -- | log to the screen
-data ScreenType = StdOut | StdErr deriving (TH.Lift, Show, Eq, G.Generic,Interpret, Enum, Bounded, Ord)
+data ScreenType = StdOut | StdErr deriving (TH.Lift, Show, Eq, G.Generic, Enum, Bounded, Ord)
 makePrisms ''ScreenType
+instance Interpret ScreenType
 
 data Screen = Screen {
       _sScreenType :: !ScreenType
