@@ -1,10 +1,8 @@
-resolver: lts-13.25
+resolver: lts-14.10
 
 packages:
 - .
 
 extra-deps:
 - dhall-1.26.0
-- th-lift-instances-0.1.14
-- th-lift-0.8.0.1
-- unix-time-0.4.6
+- smtp-mail-0.2.0.0
