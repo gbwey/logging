@@ -57,7 +57,7 @@ import qualified UnliftIO.Exception as UE
 import Data.String
 import qualified GHC.Generics as G
 import Data.Maybe
-import Dhall hiding (string,auto)
+import Dhall hiding (string,auto,map)
 import qualified Dhall as D
 import qualified Control.Monad.State.Strict as S
 import qualified Language.Haskell.TH as TH
@@ -77,7 +77,7 @@ newtype Secret = Secret { unSecret :: Text } deriving (TH.Lift, Generic, Eq)
 instance IsString Secret where
   fromString = Secret . T.pack
 
-instance Interpret Secret where
+instance FromDhall Secret where
   autoWith i = Secret <$> autoWith @Text i
 
 instance ToJSON Secret where
@@ -95,12 +95,12 @@ type RL e m a = ReaderT e (LoggingT m) a
 
 data LLog = Debug | Info | Warn | Error deriving (TH.Lift, G.Generic, Show, Eq, Enum, Bounded, Ord)
 makePrisms ''LLog
-instance Interpret LLog
+instance FromDhall LLog
 
 -- | log to the screen
 data ScreenType = StdOut | StdErr deriving (TH.Lift, Show, Eq, G.Generic, Enum, Bounded, Ord)
 makePrisms ''ScreenType
-instance Interpret ScreenType
+instance FromDhall ScreenType
 
 data Screen = Screen {
       _sScreenType :: !ScreenType
@@ -134,20 +134,20 @@ data LogOpts = LogOpts
 makeLenses ''LogOpts
 makeLenses ''Email
 
-genericAutoZ :: (Generic a, GenericInterpret (G.Rep a)) => InterpretOptions -> Type a
+genericAutoZ :: (Generic a, GenericFromDhall (G.Rep a)) => InterpretOptions -> Type a
 genericAutoZ i = fmap G.to (S.evalState (genericAutoWith i) 1)
 
-instance Interpret Email where
+instance FromDhall Email where
   autoWith i = genericAutoZ i { fieldModifier = T.drop 2 }
 
-instance Interpret File where
+instance FromDhall File where
   autoWith i = genericAutoZ i { fieldModifier = T.drop 2 }
 
 -- dont do it with screen cos is a tuple and you will lose _1 and _2
-instance Interpret LogOpts where
+instance FromDhall LogOpts where
   autoWith i = genericAutoZ i { fieldModifier = T.drop 2 }
 
-instance Interpret Screen where
+instance FromDhall Screen where
   autoWith i = genericAutoZ i { fieldModifier = T.drop 2 }
 
 toLogLevel :: LLog -> LogLevel
@@ -328,7 +328,7 @@ lgInfo lg = liftIO . lg LevelInfo
 lgWarn lg = liftIO . lg LevelWarn
 lgError lg = liftIO . lg LevelError
 
-loadDhallTH :: forall a . (TH.Lift a, Interpret a) => Text -> TH.Q TH.Exp
+loadDhallTH :: forall a . (TH.Lift a, FromDhall a) => Text -> TH.Q TH.Exp
 loadDhallTH txt = do
   c <- TH.runIO $ input (D.auto @a) txt
   TH.lift c

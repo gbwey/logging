@@ -4,5 +4,5 @@ packages:
 - .
 
 extra-deps:
-- dhall-1.26.0
+- dhall-1.27.0
 - smtp-mail-0.2.0.0
