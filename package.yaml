@@ -16,7 +16,7 @@ dependencies:
   - aeson
   - bytestring
   - clock
-  - dhall
+  - dhall >= 1.27.0
   - directory
   - extra
   - fast-logger
