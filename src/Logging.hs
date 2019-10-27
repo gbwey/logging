@@ -72,7 +72,7 @@ import Data.Aeson (ToJSON(..))
 newtype GBException = GBException { gbMessage :: Text } deriving (Show,Eq)
 instance E.Exception GBException
 
-newtype Secret = Secret { unSecret :: Text } deriving (TH.Lift, Generic, Eq)
+newtype Secret = Secret { unSecret :: Text } deriving (TH.Lift, Generic, Eq, Read)
 
 instance IsString Secret where
   fromString = Secret . T.pack
