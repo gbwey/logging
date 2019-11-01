@@ -68,6 +68,7 @@ import Data.List (foldl', dropWhileEnd)
 import System.Directory
 import Numeric (showHex)
 import Data.Aeson (ToJSON(..))
+import Data.Functor.Contravariant ((>$<))
 
 newtype GBException = GBException { gbMessage :: Text } deriving (Show,Eq)
 instance E.Exception GBException
@@ -76,6 +77,9 @@ newtype Secret = Secret { unSecret :: Text } deriving (TH.Lift, Generic, Eq, Rea
 
 instance IsString Secret where
   fromString = Secret . T.pack
+
+instance ToDhall Secret where
+  injectWith i = unSecret >$< injectWith @Text i
 
 instance FromDhall Secret where
   autoWith i = Secret <$> autoWith @Text i
