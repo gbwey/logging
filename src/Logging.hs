@@ -69,6 +69,7 @@ import System.Directory
 import Numeric (showHex)
 import Data.Aeson (ToJSON(..))
 import Data.Functor.Contravariant ((>$<))
+import Data.Text.Lazy.Builder (fromText)
 
 newtype GBException = GBException { gbMessage :: Text } deriving (Show,Eq)
 instance E.Exception GBException
@@ -137,6 +138,9 @@ data LogOpts = LogOpts
 
 makeLenses ''LogOpts
 makeLenses ''Email
+
+instance ToText LogOpts where
+  toText = fromText . T.pack . show
 
 genericAutoZ :: (Generic a, GenericFromDhall (G.Rep a)) => InterpretOptions -> Type a
 genericAutoZ i = fmap G.to (S.evalState (genericAutoWith i) 1)
