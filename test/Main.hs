@@ -18,7 +18,7 @@ lgempty :: LogOpts
 lgempty = $(loadDhallTH @LogOpts "./test_log_empty.dhall")
 
 main :: IO ()
-main = defaultMain $ testGroup "TestPred"
+main = defaultMain $ testGroup "Logging"
     [
         testCase "dir in file" $ (@?=) (Just "testdir") (lg ^? lFile . _Just . fDir)
       , testCase "smtpfrom in email" $ (@?=) (Just "testsmtpfrom") (lg ^? lEmail . _Just . eSmtpFrom)
