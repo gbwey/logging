@@ -67,29 +67,10 @@ import Data.Char
 import Data.List (foldl', dropWhileEnd)
 import System.Directory
 import Numeric (showHex)
-import Data.Aeson (ToJSON(..))
-import Data.Functor.Contravariant ((>$<))
 import Data.Text.Lazy.Builder (fromText)
 
 newtype GBException = GBException { gbMessage :: Text } deriving (Show,Eq)
 instance E.Exception GBException
-
-newtype Secret = Secret { unSecret :: Text } deriving (TH.Lift, Generic, Eq, Read)
-
-instance IsString Secret where
-  fromString = Secret . T.pack
-
-instance ToDhall Secret where
-  injectWith i = unSecret >$< injectWith @Text i
-
-instance FromDhall Secret where
-  autoWith i = Secret <$> autoWith @Text i
-
-instance ToJSON Secret where
-  toJSON (Secret s) = toJSON s
-
-instance Show Secret where
-  show _ = "Secret *******"
 
 -- | 'ML' has the minimum set of constraints for running sql commands in sqlhandler-odbc
 -- use MonadReader e to customise the environment
