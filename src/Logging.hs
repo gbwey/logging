@@ -325,7 +325,7 @@ loadDhallTH txt = do
 loadFromLogConfig :: Text -> IO LogOpts
 loadFromLogConfig expr = do
   config <- input D.auto expr :: IO LogOpts
-  T.putStrLn $[st|configuration [#{expr}] found:#{show config}|]
+  T.putStrLn [st|configuration [#{expr}] found:#{show config}|]
   return config
 
 leWith :: MLog m => Text -> e -> (LogOpts -> LogOpts) -> RL e m a -> m a
