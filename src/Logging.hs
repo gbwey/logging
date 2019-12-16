@@ -123,7 +123,7 @@ makeLenses ''Email
 instance ToText LogOpts where
   toText = fromText . T.pack . show
 
-genericAutoZ :: (Generic a, GenericFromDhall (G.Rep a)) => InterpretOptions -> Type a
+genericAutoZ :: (Generic a, GenericFromDhall (G.Rep a)) => InterpretOptions -> Decoder a
 genericAutoZ i = fmap G.to (S.evalState (genericAutoWith i) 1)
 
 instance FromDhall Email where
