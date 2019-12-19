@@ -32,7 +32,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , clock
-    , dhall >=1.27.0
+    , dhall >=1.28.0
     , directory
     , either
     , extra
@@ -68,7 +68,7 @@ test-suite logging-test
     , base >=4.7 && <5
     , bytestring
     , clock
-    , dhall >=1.27.0
+    , dhall >=1.28.0
     , directory
     , either
     , extra
