@@ -82,11 +82,13 @@ type RL e m a = ReaderT e (LoggingT m) a
 data LLog = Debug | Info | Warn | Error deriving (TH.Lift, G.Generic, Show, Eq, Enum, Bounded, Ord)
 makePrisms ''LLog
 instance FromDhall LLog
+instance ToDhall LLog
 
 -- | log to the screen
 data ScreenType = StdOut | StdErr deriving (TH.Lift, Show, Eq, G.Generic, Enum, Bounded, Ord)
 makePrisms ''ScreenType
 instance FromDhall ScreenType
+instance ToDhall ScreenType
 
 data Screen = Screen {
       _sScreenType :: !ScreenType
@@ -115,6 +117,7 @@ data LogOpts = LogOpts
        { _lFile :: !(Maybe File)
        , _lScreen :: !(Maybe Screen)
        , _lEmail :: !(Maybe Email)
+       , _lDebug :: !Bool
        } deriving (TH.Lift, Generic, Show)
 
 makeLenses ''LogOpts
@@ -123,21 +126,41 @@ makeLenses ''Email
 instance ToText LogOpts where
   toText = fromText . T.pack . show
 
-genericAutoZ :: (Generic a, GenericFromDhall (G.Rep a)) => InterpretOptions -> Decoder a
-genericAutoZ i = fmap G.to (S.evalState (genericAutoWith i) 1)
+genericAutoD :: (Generic a, GenericFromDhall (G.Rep a)) => InterpretOptions -> Decoder a
+genericAutoD i = fmap G.to (S.evalState (genericAutoWith i) 1)
+
+genericAutoE :: (Generic a, GenericToDhall (G.Rep a)) => InterpretOptions -> Encoder a
+genericAutoE i = contramap G.from (S.evalState (genericToDhallWith i) 1)
 
 instance FromDhall Email where
-  autoWith i = genericAutoZ i { fieldModifier = T.drop 2 }
+  autoWith i = genericAutoD i { fieldModifier = T.drop 2 }
+
+instance ToDhall Email where
+  injectWith o = genericAutoE o { fieldModifier = T.drop 2 }
 
 instance FromDhall File where
-  autoWith i = genericAutoZ i { fieldModifier = T.drop 2 }
+  autoWith i = genericAutoD i { fieldModifier = T.drop 2 }
+
+instance ToDhall File where
+  injectWith o = genericAutoE o { fieldModifier = T.drop 2 }
 
 -- dont do it with screen cos is a tuple and you will lose _1 and _2
 instance FromDhall LogOpts where
-  autoWith i = genericAutoZ i { fieldModifier = T.drop 2 }
+  autoWith i = genericAutoD i { fieldModifier = T.drop 2 }
+
+logopts :: Decoder LogOpts
+logopts =  genericAutoD defaultInterpretOptions { fieldModifier = T.drop 2 }
+
+instance ToDhall LogOpts where
+  injectWith o = genericAutoE o { fieldModifier = T.drop 2 }
+
 
 instance FromDhall Screen where
-  autoWith i = genericAutoZ i { fieldModifier = T.drop 2 }
+  autoWith i = genericAutoD i { fieldModifier = T.drop 2 }
+
+instance ToDhall Screen where
+  injectWith o = genericAutoE o { fieldModifier = T.drop 2 }
+
 
 toLogLevel :: LLog -> LogLevel
 toLogLevel = \case
@@ -179,32 +202,40 @@ chklogdir dir = do
    T.putStrLn msg
    UE.throwIO $ GBException msg
 
--- skip sending an email if not logging to a file
 -- | log using the LogOpts and pass in the reader value
+--   only sends emails when there is an exception ie logError does not send an email
 logWith :: MLog m => e -> LogOpts -> RL e m a -> m a
 logWith e opts mra = do
+  when (opts ^. lDebug) $ liftIO $ T.putStrLn [st|starting in debug mode: #{show opts}|]
   let ma = runReaderT mra e
-  let sendemail txt ltxt = \case
-          Nothing -> return ()
-          Just email -> do
-            es <- liftIO loadEnvs
-            liftIO $ emailMessage email [st|failure: #{txt}|] [TL.pack (show ltxt), es]
-  case opts of
-    LogOpts (Just logfn) mscreen memail -> do
+  case opts ^. lFile of
+    Just logfn -> do
       tm <- liftIO getZonedTime
       let dir = _fDir logfn
       liftIO $ chklogdir dir
       let fn = fixfn dir $ fileNameDate tm (if _fLongName logfn then fmtLong else fmtShort) (_fPrefix logfn) ".log"
-      runMyFileLoggingT (_fLevel logfn,mscreen) fn $ UE.catchAny ma $ \x -> do
-        $logError [st|outermost error: #{show x}|]
-        sendemail (T.pack fn) x memail
-        UE.throwIO x
-    LogOpts Nothing o _memail ->
-      ma & case o of
+      runMyFileLoggingT (_fLevel logfn, opts ^. lScreen) fn $ emailOnError (T.pack fn) opts ma
+    Nothing -> do
+      emailOnError "no file" opts ma & case opts ^. lScreen of
                   Nothing -> flip runLoggingT (\_ _ _ _  -> return ()) -- skip logging entirely
                   Just (Screen StdOut p) -> runStdoutLoggingT . filterLogger (\_ lvl -> toLogLevel p <= lvl)
                   Just (Screen StdErr p) -> runStderrLoggingT . filterLogger (\_ lvl -> toLogLevel p <= lvl)
 
+emailOnError :: (MonadLogger m, MLog m) => Text -> LogOpts -> m a -> m a
+emailOnError txt opts ma =
+  UE.catchAny ma $ \x -> do
+    $logError [st|outermost error: #{show x}|]
+    liftIO $ sendemail opts txt x
+    UE.throwIO x
+
+sendemail :: (ToText a1, Show a2) => LogOpts -> a1 -> a2 -> IO ()
+sendemail opts txt ltxt =
+  case opts ^. lEmail of
+     Nothing -> when (opts ^. lDebug) $ T.putStrLn [st|debug: no email specified: txt=[#{txt}] ltxt=[#{show ltxt}]|]
+     Just email -> do
+       when (opts ^. lDebug) $ T.putStrLn [st|debug: sending email: txt=[#{txt}] ltxt=[#{show ltxt}]|]
+       es <- loadEnvs
+       emailMessage email [st|failure: #{txt}|] [TL.pack (show ltxt), es]
 
 -- | custom logger for writing to a file
 runMyFileLoggingT :: U.MonadUnliftIO m => (LLog, Maybe Screen) -> FilePath -> LoggingT m b -> m b
@@ -361,11 +392,13 @@ logs :: LogOpts
 logs = LogOpts Nothing
                (Just (Screen StdOut Debug))
                Nothing
+               False
 
 logd :: LogOpts
 logd = LogOpts (Just (File "def" False Debug "."))
                (Just (Screen StdOut Debug))
                Nothing
+               False
 
 logx :: LLog -> LogOpts
 logx lvl = logd & lScreen . _Just . sLevel .~ lvl

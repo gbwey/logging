@@ -16,8 +16,9 @@ in { debug = Level.Debug
    , nofile = None File
    , noemail = None Email
    , nodir = "."
-   , Type = { File : Optional File, Screen : Optional Screen, Email : Optional Email }
+   , Type = { File : Optional File, Screen : Optional Screen, Email : Optional Email, Debug : Bool }
    , default = { File = Some { Prefix = "def", LongName = True, Level = Level.Debug, Dir = "." }
                , Screen = Some { ScreenType = ScreenType.StdOut, Level = Level.Info }
-               , Email = None Email }
+               , Email = None Email
+               , Debug = False }
   }

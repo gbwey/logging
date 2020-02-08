@@ -6,5 +6,6 @@ in {
                       , SmtpTo = "testsmtpto"
                       , SmtpFrom = "testsmtpfrom"
                       }
+   , Debug = True
 }
 
