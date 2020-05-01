@@ -16,7 +16,7 @@ dependencies:
   - aeson
   - bytestring
   - clock
-  - dhall >= 1.28.0
+  - dhall >= 1.31.1
   - directory
   - extra
   - fast-logger
@@ -38,8 +38,8 @@ dependencies:
 
 library:
   source-dirs: src
-  ghc-options:
-  - -fomit-interface-pragmas
+#  ghc-options:
+#  - -fomit-interface-pragmas
 
 tests:
   logging-test:

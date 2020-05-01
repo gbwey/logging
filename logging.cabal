@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 80029cabaa45545abfa258570de3aec8b53e47ce72a0d3d879c2fc7e78feea19
+-- hash: 89af8dcb5c27162b86d1f265c525cfb31e5944bc6c11d7851098eb973288e728
 
 name:           logging
 version:        0.1.0.0
@@ -26,13 +26,12 @@ library
       Paths_logging
   hs-source-dirs:
       src
-  ghc-options: -fomit-interface-pragmas
   build-depends:
       aeson
     , base >=4.7 && <5
     , bytestring
     , clock
-    , dhall >=1.28.0
+    , dhall >=1.31.1
     , directory
     , either
     , extra
@@ -68,7 +67,7 @@ test-suite logging-test
     , base >=4.7 && <5
     , bytestring
     , clock
-    , dhall >=1.28.0
+    , dhall >=1.31.1
     , directory
     , either
     , extra

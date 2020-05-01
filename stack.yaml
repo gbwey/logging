@@ -1,10 +1,11 @@
-resolver: lts-14.10
+resolver: lts-14.27
 
 packages:
 - .
 
 extra-deps:
-- dhall-1.28.0
+- dhall-1.31.1
 - atomic-write-0.2.0.7@sha256:3b626dfbc288cd070f1ac31b1c15ddd49822a923778ffe21f92b2116ffc72dc3,4584
-- prettyprinter-1.5.1@sha256:fca87c3e2611d3499a0341a59857e9b424a23f31646e4737d535a18582284f96,5375
+- prettyprinter-1.6.1@sha256:11876ec94a79048e1d2942a99bfaa6f2be5222eafeedac6a9545673a79465009,5459
 - smtp-mail-0.2.0.0
+- cborg-json-0.2.2.0@sha256:55eb9d8e897ae9fb6c8da7aed882d0c78b326632b1b58966921a1fcde2b88b8d,2035

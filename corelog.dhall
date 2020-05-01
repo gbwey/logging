@@ -20,5 +20,6 @@ in { debug = Level.Debug
    , default = { File = Some { Prefix = "def", LongName = True, Level = Level.Debug, Dir = "." }
                , Screen = Some { ScreenType = ScreenType.StdOut, Level = Level.Info }
                , Email = None Email
-               , Debug = False }
+               , Debug = False
+               }
   }

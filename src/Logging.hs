@@ -59,7 +59,6 @@ import qualified GHC.Generics as G
 import Data.Maybe
 import Dhall hiding (string,auto,map)
 import qualified Dhall as D
-import qualified Control.Monad.State.Strict as S
 import qualified Language.Haskell.TH as TH
 import qualified Language.Haskell.TH.Syntax as TH
 import qualified System.Info as SI
@@ -126,40 +125,34 @@ makeLenses ''Email
 instance ToText LogOpts where
   toText = fromText . T.pack . show
 
-genericAutoD :: (Generic a, GenericFromDhall (G.Rep a)) => InterpretOptions -> Decoder a
-genericAutoD i = fmap G.to (S.evalState (genericAutoWith i) 1)
-
-genericAutoE :: (Generic a, GenericToDhall (G.Rep a)) => InterpretOptions -> Encoder a
-genericAutoE i = contramap G.from (S.evalState (genericToDhallWith i) 1)
-
 instance FromDhall Email where
-  autoWith i = genericAutoD i { fieldModifier = T.drop 2 }
+  autoWith _i = genericAutoWith defaultInterpretOptions { fieldModifier = T.drop 2 }
 
 instance ToDhall Email where
-  injectWith o = genericAutoE o { fieldModifier = T.drop 2 }
+  injectWith _o = genericToDhallWith defaultInterpretOptions { fieldModifier = T.drop 2 }
 
 instance FromDhall File where
-  autoWith i = genericAutoD i { fieldModifier = T.drop 2 }
+  autoWith _i = genericAutoWith defaultInterpretOptions { fieldModifier = T.drop 2 }
 
 instance ToDhall File where
-  injectWith o = genericAutoE o { fieldModifier = T.drop 2 }
+  injectWith _o = genericToDhallWith defaultInterpretOptions { fieldModifier = T.drop 2 }
 
 -- dont do it with screen cos is a tuple and you will lose _1 and _2
 instance FromDhall LogOpts where
-  autoWith i = genericAutoD i { fieldModifier = T.drop 2 }
+  autoWith _i = genericAutoWith defaultInterpretOptions { fieldModifier = T.drop 2 }
 
 logopts :: Decoder LogOpts
-logopts =  genericAutoD defaultInterpretOptions { fieldModifier = T.drop 2 }
+logopts =  genericAutoWith defaultInterpretOptions { fieldModifier = T.drop 2 }
 
 instance ToDhall LogOpts where
-  injectWith o = genericAutoE o { fieldModifier = T.drop 2 }
+  injectWith _o = genericToDhallWith defaultInterpretOptions { fieldModifier = T.drop 2 }
 
 
 instance FromDhall Screen where
-  autoWith i = genericAutoD i { fieldModifier = T.drop 2 }
+  autoWith _i = genericAutoWith defaultInterpretOptions { fieldModifier = T.drop 2 }
 
 instance ToDhall Screen where
-  injectWith o = genericAutoE o { fieldModifier = T.drop 2 }
+  injectWith _o = genericToDhallWith defaultInterpretOptions { fieldModifier = T.drop 2 }
 
 
 toLogLevel :: LLog -> LogLevel
@@ -218,8 +211,13 @@ logWith e opts mra = do
     Nothing -> do
       emailOnError "no file" opts ma & case opts ^. lScreen of
                   Nothing -> flip runLoggingT (\_ _ _ _  -> return ()) -- skip logging entirely
-                  Just (Screen StdOut p) -> runStdoutLoggingT . filterLogger (\_ lvl -> toLogLevel p <= lvl)
-                  Just (Screen StdErr p) -> runStderrLoggingT . filterLogger (\_ lvl -> toLogLevel p <= lvl)
+                  Just (Screen ss p) ->
+                    toLoggingT ss . filterLogger (\_ lvl -> toLogLevel p <= lvl)
+
+toLoggingT :: MonadIO m => ScreenType -> (LoggingT m a -> m a)
+toLoggingT = \case
+  StdOut -> runStdoutLoggingT
+  StdErr -> runStderrLoggingT
 
 emailOnError :: (MonadLogger m, MLog m) => Text -> LogOpts -> m a -> m a
 emailOnError txt opts ma =
@@ -255,11 +253,17 @@ loggerSetOutput (pfile, mstdout) logt l s level msg = do
   case mstdout of
     Nothing -> return ()
     Just (Screen x pscreen) ->
-      when (toLogLevel pscreen <= level) $ B.hPutStrLn (case x of StdOut -> stdout; StdErr -> stderr) $ dispLevel level <> B.take 8000 (fromLogStr msg) -- to avoid overflow to stdout
+      when (toLogLevel pscreen <= level) $ B.hPutStrLn (toSout x) (dispLevel level <> B.take 8000 (fromLogStr msg)) -- to avoid overflow to stdout
   when (toLogLevel pfile <= level) $ do
     utcTime <- localUTC <$> getZonedTime
     let timestampStr = formatISO8601Millis utcTime
     pushLogStr logt $ defaultLogStr l s level (toLogStr (timestampStr <> " ") <> msg)
+
+toSout :: ScreenType -> Handle
+toSout =
+  \case
+    StdOut -> stdout
+    StdErr -> stderr
 
 fileNameDate :: tm -> Format (String -> String) (tm -> String -> String) -> String -> String -> FilePath
 fileNameDate tm fmt pref = formatToString (string % "_" % fmt % string) pref tm
@@ -321,7 +325,10 @@ localUTC :: ZonedTime -> UTCTime
 localUTC = roundSeconds . localTimeToUTC utc . zonedTimeToLocalTime
 
 roundSeconds :: Timeable t => t -> t
-roundSeconds = over seconds (fromIntegral @Integer . round)
+roundSeconds = over seconds (fromIntegral @Integer . floor)
+
+roundSeconds100 :: Timeable t => t -> t
+roundSeconds100 = over seconds (\s -> fromIntegral @Integer (floor (s * 100)) / 100)
 
 zeroDate :: Timeable t => t -> t
 zeroDate = over time (const (TimeOfDay 0 0 0))
