@@ -208,7 +208,7 @@ logWith e opts mra = do
       liftIO $ chklogdir dir
       let fn = fixfn dir $ fileNameDate tm (if _fLongName logfn then fmtLong else fmtShort) (_fPrefix logfn) ".log"
       runMyFileLoggingT (_fLevel logfn, opts ^. lScreen) fn $ emailOnError (T.pack fn) opts ma
-    Nothing -> do
+    Nothing ->
       emailOnError "no file" opts ma & case opts ^. lScreen of
                   Nothing -> flip runLoggingT (\_ _ _ _  -> return ()) -- skip logging entirely
                   Just (Screen ss p) ->

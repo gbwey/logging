@@ -40,8 +40,8 @@ main = do
       , testCase "defDir" $ (@?=) (Just ".") (lg1 ^? lFile . _Just . fDir)
       , testCase "empty debug false" $ assertBool "a3" $ not (lgempty ^. lDebug)
       , testCase "debug true" $ assertBool "a3" $ lg ^. lDebug
-      , testCase "todhall: log debug" $ testtodhall1 >>= \f -> (f (LogOpts Nothing Nothing Nothing False)) @?= (False, Nothing)
-      , testCase "todhall: log debug" $ testtodhall1 >>= \f -> (f (LogOpts (Just (File "fn" True Info "fp")) Nothing Nothing True)) @?= (True, (Just (File "fn" True Info "fp")))
+      , testCase "todhall: log debug" $ testtodhall1 >>= \f -> f (LogOpts Nothing Nothing Nothing False) @?= (False, Nothing)
+      , testCase "todhall: log debug" $ testtodhall1 >>= \f -> f (LogOpts (Just (File "fn" True Info "fp")) Nothing Nothing True) @?= (True, Just (File "fn" True Info "fp"))
      ]
 
 testtodhall1 :: IO (LogOpts -> (Bool, Maybe File))
