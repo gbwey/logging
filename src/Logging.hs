@@ -107,7 +107,7 @@ makeLenses ''Screen
 
 -- | log to a file
 data File = File {
-      _fPrefix :: FilePath -- ^ basename of log file
+      _fPrefix :: !FilePath -- ^ basename of log file
     , _fLongName :: !Bool -- ^ whether to use a unique name based on datetime or the 'lfName' as is
     , _fLevel :: !LLog
     , _fDir :: !FilePath
