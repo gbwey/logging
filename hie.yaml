@@ -1,0 +1,19 @@
+cradle:
+  stack:
+   - path: ".\\src"
+     component: "logging:lib"
+   - path: ".\\test"
+     component: "logging:test:logging-test"
+   - path: ".\\app"
+     component: "logging:exe:perflog"
+   - path: ".\\app2"
+     component: "logging:exe:benchdatetime"
+  cabal:
+   - path: "./src"
+     component: "lib:logging"
+   - path: "./test"
+     component: "test:logging-test"
+   - path: "./app"
+     component: "exe:perflog"
+   - path: "./app2"
+     component: "exe:benchdatetime"

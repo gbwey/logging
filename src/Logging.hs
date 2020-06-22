@@ -1,5 +1,7 @@
 {-# OPTIONS -Wall #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -28,9 +30,10 @@ Mainly has various logging functions and timing of commands.
 Allows you to log to a file or the screen or both
 -}
 module Logging where
+import qualified Data.UnixTime as UT
 import Data.Time
-import Data.Time.Format (FormatTime)
 import System.Clock
+import qualified Data.Text.Lazy.Builder as TLB
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -40,7 +43,6 @@ import Control.Monad.Reader
 import qualified Control.Exception as E
 import Control.Monad.Logger
 import System.Log.FastLogger
-import Data.Time.ISO8601
 import qualified Data.ByteString.Char8 as B
 import Text.Shakespeare.Text
 import Formatting
@@ -63,18 +65,25 @@ import qualified Language.Haskell.TH as TH
 import qualified Language.Haskell.TH.Syntax as TH
 import qualified System.Info as SI
 import Data.Char
-import Data.List (foldl', dropWhileEnd)
+import Data.List (foldl', dropWhileEnd, isInfixOf)
 import System.Directory
 import Numeric (showHex)
-import Data.Text.Lazy.Builder (fromText)
+import qualified Data.ByteString.Builder as BB
+import qualified Chronos as C
+#ifdef mingw32_HOST_OS
+import qualified System.Win32.Time as W32
+import System.Win32.Time (SYSTEMTIME(..))
+import Text.Printf
+#endif
+import qualified DateTA
+import Data.Time.Clock.POSIX
 
 newtype GBException = GBException { gbMessage :: Text } deriving (Show,Eq)
 instance E.Exception GBException
 
 -- | 'ML' has the minimum set of constraints for running sql commands in sqlhandler-odbc
 -- use MonadReader e to customise the environment
-type ML e m = (MLog m, MonadLogger m, MonadLoggerIO m, MonadReader e m)
-type MLog m = U.MonadUnliftIO m
+type ML e m = (U.MonadUnliftIO m, MonadLogger m, MonadLoggerIO m, MonadReader e m)
 -- | 'RL' defines the outer two layers of 'ML'
 type RL e m a = ReaderT e (LoggingT m) a
 
@@ -123,7 +132,7 @@ makeLenses ''LogOpts
 makeLenses ''Email
 
 instance ToText LogOpts where
-  toText = fromText . T.pack . show
+  toText = TLB.fromText . T.pack . show
 
 instance FromDhall Email where
   autoWith _i = genericAutoWith defaultInterpretOptions { fieldModifier = T.drop 2 }
@@ -153,7 +162,6 @@ instance FromDhall Screen where
 
 instance ToDhall Screen where
   injectWith _o = genericToDhallWith defaultInterpretOptions { fieldModifier = T.drop 2 }
-
 
 toLogLevel :: LLog -> LogLevel
 toLogLevel = \case
@@ -195,31 +203,67 @@ chklogdir dir = do
    T.putStrLn msg
    UE.throwIO $ GBException msg
 
+logWith :: U.MonadUnliftIO m => e -> LogOpts -> RL e m a -> m a
+logWith = logWith' Nothing
+
+logWith' :: U.MonadUnliftIO m => Maybe UT.UnixTime -> e -> LogOpts -> RL e m a -> m a
+logWith' = logWithImpl $ fmap toLogStr
+#ifdef mingw32_HOST_OS
+  ioDateWin32Katip
+#else
+  ioDateU
+#endif
+
 -- | log using the LogOpts and pass in the reader value
 --   only sends emails when there is an exception ie logError does not send an email
-logWith :: MLog m => e -> LogOpts -> RL e m a -> m a
-logWith e opts mra = do
+logWithImpl :: U.MonadUnliftIO m => IO LogStr -> Maybe UT.UnixTime -> e -> LogOpts -> RL e m a -> m a
+logWithImpl mdt mut e opts mra = do
   when (opts ^. lDebug) $ liftIO $ T.putStrLn [st|starting in debug mode: #{show opts}|]
   let ma = runReaderT mra e
   case opts ^. lFile of
     Just logfn -> do
-      tm <- liftIO getZonedTime
       let dir = _fDir logfn
       liftIO $ chklogdir dir
-      let fn = fixfn dir $ fileNameDate tm (if _fLongName logfn then fmtLong else fmtShort) (_fPrefix logfn) ".log"
-      runMyFileLoggingT (_fLevel logfn, opts ^. lScreen) fn $ emailOnError (T.pack fn) opts ma
+--      fmt1 <- liftIO $ T.unpack . (if _fLongName logfn then formatAsFileNameLong else formatAsFileNameShort) <$> W32.getLocalTime
+      fmt1 <- liftIO $ fmap B.unpack (UT.formatUnixTime (if _fLongName logfn then fmtLong1 else fmtShort1) =<< Data.Maybe.maybe UT.getUnixTime pure mut)
+      let fn = fixfn dir (_fPrefix logfn <> "_" <> fmt1 <> ".log")
+      runMyFileLoggingT mdt (_fLevel logfn, opts ^. lScreen) fn $ emailOnError (T.pack fn) opts ma
     Nothing ->
       emailOnError "no file" opts ma & case opts ^. lScreen of
                   Nothing -> flip runLoggingT (\_ _ _ _  -> return ()) -- skip logging entirely
                   Just (Screen ss p) ->
                     toLoggingT ss . filterLogger (\_ lvl -> toLogLevel p <= lvl)
 
+-- | custom logger for writing to a file
+runMyFileLoggingT :: U.MonadUnliftIO m => IO LogStr -> (LLog, Maybe Screen) -> FilePath -> LoggingT m b -> m b
+runMyFileLoggingT mdt p fn logt =
+  UE.bracket (liftIO $ newFileLoggerSet defaultBufSize fn)
+     (liftIO . rmLoggerSet)
+     (runLoggingT logt . loggerSetOutput mdt p)
+
+loggerSetOutput :: IO LogStr
+              -> (LLog, Maybe Screen)
+              -> LoggerSet
+              -> Loc
+              -> LogSource
+              -> LogLevel
+              -> LogStr
+              -> IO ()
+loggerSetOutput mdt (pfile, mstdout) logt l s level msg = do
+  case mstdout of
+    Nothing -> return ()
+    Just (Screen x pscreen) ->
+      when (toLogLevel pscreen <= level) $ B.hPutStrLn (toSout x) (dispLevel level <> B.take 8000 (fromLogStr msg)) -- to avoid overflow to stdout
+  when (toLogLevel pfile <= level) $ do
+    timestampStr <- mdt
+    pushLogStr logt $ defaultLogStr l s level (timestampStr <> " " <> msg)
+
 toLoggingT :: MonadIO m => ScreenType -> (LoggingT m a -> m a)
 toLoggingT = \case
   StdOut -> runStdoutLoggingT
   StdErr -> runStderrLoggingT
 
-emailOnError :: (MonadLogger m, MLog m) => Text -> LogOpts -> m a -> m a
+emailOnError :: (MonadLogger m, U.MonadUnliftIO m) => Text -> LogOpts -> m a -> m a
 emailOnError txt opts ma =
   UE.catchAny ma $ \x -> do
     $logError [st|outermost error: #{show x}|]
@@ -235,29 +279,45 @@ sendemail opts txt ltxt =
        es <- loadEnvs
        emailMessage email [st|failure: #{txt}|] [TL.pack (show ltxt), es]
 
--- | custom logger for writing to a file
-runMyFileLoggingT :: U.MonadUnliftIO m => (LLog, Maybe Screen) -> FilePath -> LoggingT m b -> m b
-runMyFileLoggingT p fn logt =
-  UE.bracket (liftIO $ newFileLoggerSet defaultBufSize fn)
-     (liftIO . rmLoggerSet)
-     (runLoggingT logt . loggerSetOutput p)
+ioDateC :: TimeZone -> IO BB.Builder
+ioDateC tz = do
+  tm <- C.now
+  return $ C.builderUtf8_YmdHMSz C.OffsetFormatColonOff C.SubsecondPrecisionAuto C.w3c (C.timeToOffsetDatetime (C.Offset (timeZoneMinutes tz)) tm)
+{-# INLINEABLE ioDateC #-}
 
-loggerSetOutput :: (LLog, Maybe Screen)
-              -> LoggerSet
-              -> Loc
-              -> LogSource
-              -> LogLevel
-              -> LogStr
-              -> IO ()
-loggerSetOutput (pfile, mstdout) logt l s level msg = do
-  case mstdout of
-    Nothing -> return ()
-    Just (Screen x pscreen) ->
-      when (toLogLevel pscreen <= level) $ B.hPutStrLn (toSout x) (dispLevel level <> B.take 8000 (fromLogStr msg)) -- to avoid overflow to stdout
-  when (toLogLevel pfile <= level) $ do
-    utcTime <- localUTC <$> getZonedTime
-    let timestampStr = formatISO8601Millis utcTime
-    pushLogStr logt $ defaultLogStr l s level (toLogStr (timestampStr <> " ") <> msg)
+ioDateU :: IO B.ByteString
+ioDateU = do
+  tm <- UT.getUnixTime
+  UT.formatUnixTime "%FT%T%z" tm
+{-# INLINEABLE ioDateU #-}
+
+ioDateD :: IO String
+ioDateD = do
+  tm <- getZonedTime
+  return $ formatTime defaultTimeLocale "%FT%T.%3q%z" tm
+{-# INLINEABLE ioDateD #-}
+
+#ifdef mingw32_HOST_OS
+ioDateWin32Katip :: IO Text
+ioDateWin32Katip = do
+  tm <- W32.getLocalTime
+  return $ DateTA.formatAsTimeStampST tm
+{-# INLINEABLE ioDateWin32Katip #-}
+
+ioDateWin32Printf :: IO String
+ioDateWin32Printf = do
+  SYSTEMTIME{..} <- W32.getLocalTime
+  return $ printf "%d-%02d-%02dT%02d:%02d:%02d.%03d" wYear wMonth wDay wHour wMinute wSecond wMilliseconds
+{-# INLINEABLE ioDateWin32Printf #-}
+
+#endif
+
+ioDateP :: TimeZone -> IO Text
+ioDateP tz = do
+  tm <- getPOSIXTime
+  let y = utcToZonedTime tz (posixSecondsToUTCTime tm)
+  return $ DateTA.formatAsTimeStampP y
+{-# INLINEABLE ioDateP #-}
 
 toSout :: ScreenType -> Handle
 toSout =
@@ -267,9 +327,13 @@ toSout =
 
 fileNameDate :: tm -> Format (String -> String) (tm -> String -> String) -> String -> String -> FilePath
 fileNameDate tm fmt pref = formatToString (string % "_" % fmt % string) pref tm
-
+{-
 fileNameDateQualified :: FormatTime a => a -> String -> String -> String
 fileNameDateQualified tm pref = formatToString (string % "_" % fmtLong % string) pref tm
+-}
+fmtShort1, fmtLong1 :: B.ByteString
+fmtShort1 = "%Y%m%d"
+fmtLong1 = fmtShort1 <> "_%H%M%S"
 
 fmtShort, fmtLong, fmtLongCrazy :: FormatTime a => Format r (a -> r)
 fmtShort = F.year <> F.month <> F.dayOfMonth
@@ -277,7 +341,14 @@ fmtLong = fmtShort <> "_" % F.hour24 <> F.minute <> F.second
 fmtLongCrazy = fmtLong <> "." % F.pico
 
 loadEnvs :: IO TL.Text
-loadEnvs = TL.pack . unlines . map (\(x,y) -> x <> " = " <> y) <$> getEnvironment
+loadEnvs =
+    TL.pack
+  . unlines
+  . map (\(x,y) -> x <> " = " <> y)
+  . filter (\(x,_) -> let z = map toLower x
+                      in not (isInfixOf "pwd" z || isInfixOf "pass" z)
+           )
+  <$> getEnvironment
 
 -- | send an email using 'myemail' which pulls the settings from log.dhall
 emailMessage :: Email -> Text -> [TL.Text] -> IO ()
@@ -287,33 +358,31 @@ emailMessage email subj bodys =
 
 -- | used for logging start and end time of a job
 timeCommand :: ML e m => Text -> m a -> m a
-timeCommand = timeCommand' (\_ _ -> return ())
+timeCommand = timeCommand' const
 
-timeCommand' :: ML e m => (Text -> (ZonedTime, ZonedTime) -> m ()) -> Text -> m a -> m a
+timeCommand' :: ML e m => (a -> (UT.UnixTime, UT.UnixTime) -> b) -> Text -> m a -> m b
 timeCommand' callback txt cmd = do
-  (c,a) <- do
-    c <- liftIO getZonedTime
-    let msg = [st|Start TimeCommand #{fmtZt c} #{txt}|]
+  (c,c1,a) <- do
+    c <- liftIO UT.getUnixTime
+    c1 <- liftIO $ T.decodeUtf8 <$> fmtZt1 c
+    let msg = [st|Start TimeCommand #{c1} #{txt}|]
     $logInfo msg
     a <- liftIO $ getTime Monotonic
-    return (c,a)
+    return (c,c1,a)
   (ret :: Either E.SomeException a) <- UE.try $ cmd >>= \x -> return $! x
   do
     b <- liftIO $ getTime Monotonic
-    d <- liftIO getZonedTime
-    let xs = [st|#{difftimes a b} started=#{fmtZt c} ended=#{fmtZt d}|]
+    d <- liftIO UT.getUnixTime
+    d1 <- liftIO $ T.decodeUtf8 <$> fmtZt1 d
+    let xs = [st|#{difftimes a b} started=#{c1} ended=#{d1}|]
     case ret of
       Left e -> do
                   let msg = [st|FAILURE!!!! TimeCommand #{xs} #{txt} [#{show e}]|]
-                  --liftIO $ T.putStrLn msg
                   $logError msg
                   UE.throwIO e
       Right x -> do
-                   --liftIO $ T.putStrLn $ "OK TimeCommand " <> xs
                    $logInfo [st|OK TimeCommand #{xs} #{txt}|]
-                   callback txt (c,d)
-                   return x
-
+                   return $ callback x (c,d)
 
 difftimes :: TimeSpec -> TimeSpec -> Text
 difftimes a b = T.pack $ showDuration (fromIntegral (sec (b - a)))
@@ -321,17 +390,14 @@ difftimes a b = T.pack $ showDuration (fromIntegral (sec (b - a)))
 fmtZt :: ZonedTime -> String
 fmtZt =  formatTime defaultTimeLocale "%T"
 
-localUTC :: ZonedTime -> UTCTime
-localUTC = roundSeconds . localTimeToUTC utc . zonedTimeToLocalTime
+fmtZt1 :: UT.UnixTime -> IO B.ByteString
+fmtZt1 =  UT.formatUnixTime "%T"
 
 roundSeconds :: Timeable t => t -> t
 roundSeconds = over seconds (fromIntegral @Integer . floor)
 
-roundSeconds100 :: Timeable t => t -> t
-roundSeconds100 = over seconds (\s -> fromIntegral @Integer (floor (s * 100)) / 100)
-
-zeroDate :: Timeable t => t -> t
-zeroDate = over time (const (TimeOfDay 0 0 0))
+localUTC :: ZonedTime -> UTCTime
+localUTC = roundSeconds . localTimeToUTC utc . zonedTimeToLocalTime
 
 dispLevel :: LogLevel -> B.ByteString
 dispLevel LevelDebug = mempty
@@ -366,34 +432,43 @@ loadFromLogConfig expr = do
   T.putStrLn [st|configuration [#{expr}] found:#{show config}|]
   return config
 
-leWith :: MLog m => Text -> e -> (LogOpts -> LogOpts) -> RL e m a -> m a
+leWith :: U.MonadUnliftIO m => Text -> e -> (LogOpts -> LogOpts) -> RL e m a -> m a
 leWith expr e g stuff = do
   logcfg <- liftIO $ loadFromLogConfig expr
   logWith e (g logcfg) stuff
 
-fbeWith :: MLog m => e -> (LogOpts -> LogOpts) -> RL e m a -> m a
+fbeWith :: U.MonadUnliftIO m => e -> (LogOpts -> LogOpts) -> RL e m a -> m a
 fbeWith = leWith "./log.dhall" -- batch stuff
 
-fb :: MLog m => RL () m a -> m a
+fb :: U.MonadUnliftIO m => RL () m a -> m a
 fb = fbeWith () id -- batch
 
-fs :: MLog m => RL () m a -> m a
+fs :: U.MonadUnliftIO m => RL () m a -> m a
 fs = fse ()
 
-fse :: MLog m => e -> RL e m a -> m a
+fse :: U.MonadUnliftIO m => e -> RL e m a -> m a
 fse e = logWith e logs
+
+fnone :: U.MonadUnliftIO m => RL () m a -> m a
+fnone = logWith () lognone
 
 -- basic ones that i use all the time
 -- no need to read the dhall files for these
-fd, fi, fw :: MLog m => RL () m a -> m a
+fd, fi, fw :: U.MonadUnliftIO m => RL () m a -> m a
 fd = fde ()
 fi = fie ()
 fw = fwe ()
 
-fde, fie, fwe :: MLog m => e -> RL e m a -> m a
+fde, fie, fwe :: U.MonadUnliftIO m => e -> RL e m a -> m a
 fde e = logWith e logd
 fie e = logWith e (logx Info)
 fwe e = logWith e (logx Warn)
+
+lognone :: LogOpts
+lognone = LogOpts Nothing
+               Nothing
+               Nothing
+               False
 
 logs :: LogOpts
 logs = LogOpts Nothing

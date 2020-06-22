@@ -12,12 +12,14 @@ extra-source-files:
 - README.md
 
 dependencies:
-  - base >= 4.7 && < 5
   - aeson
+  - base >= 4.7 && < 5
   - bytestring
+  - chronos >= 1.1.1
   - clock
-  - dhall >= 1.31.1
+  - dhall >= 1.32.0
   - directory
+  - either
   - extra
   - fast-logger
   - formatting
@@ -32,27 +34,46 @@ dependencies:
   - template-haskell
   - text
   - time
+  - unix-time
   - unliftio
   - unliftio-core
-  - either
+when:
+    - condition: os(windows)
+      dependencies: Win32 >= 2.2 && < 2.9
 
 library:
   source-dirs: src
-#  ghc-options:
-#  - -fomit-interface-pragmas
+  ghc-options:
+  - -O2
+
+executables:
+  perflog:
+    source-dirs:
+#    - src
+    - app
+    main:             Main.hs
+    ghc-options:
+#    - -threaded
+    - -O2
+    dependencies:
+    - base
+    - logging
+    - criterion
+#    - gauge
 
 tests:
   logging-test:
     main:                Main.hs
     source-dirs:
-    - src
+#    - src
     - test
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+    ghc-options: []
+#    - -threaded
+#    - -rtsopts
+#    - -with-rtsopts=-N
 #    - -fomit-interface-pragmas
     dependencies:
+    - base
     - logging
     - tasty
     - tasty-hunit
