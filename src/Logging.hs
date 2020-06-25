@@ -68,8 +68,8 @@ import Data.Char
 import Data.List (foldl', dropWhileEnd, isInfixOf)
 import System.Directory
 import Numeric (showHex)
-import qualified Data.ByteString.Builder as BB
-import qualified Chronos as C
+--import qualified Data.ByteString.Builder as BB
+--import qualified Chronos as C
 #ifdef mingw32_HOST_OS
 import qualified System.Win32.Time as W32
 import System.Win32.Time (SYSTEMTIME(..))
@@ -278,13 +278,13 @@ sendemail opts txt ltxt =
        when (opts ^. lDebug) $ T.putStrLn [st|debug: sending email: txt=[#{txt}] ltxt=[#{show ltxt}]|]
        es <- loadEnvs
        emailMessage email [st|failure: #{txt}|] [TL.pack (show ltxt), es]
-
+{-
 ioDateC :: TimeZone -> IO BB.Builder
 ioDateC tz = do
   tm <- C.now
   return $ C.builderUtf8_YmdHMSz C.OffsetFormatColonOff C.SubsecondPrecisionAuto C.w3c (C.timeToOffsetDatetime (C.Offset (timeZoneMinutes tz)) tm)
 {-# INLINEABLE ioDateC #-}
-
+-}
 ioDateU :: IO B.ByteString
 ioDateU = do
   tm <- UT.getUnixTime

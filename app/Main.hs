@@ -7,8 +7,8 @@ import Control.Monad.Logger
 import Control.Monad
 import Logging
 import qualified Data.Text.Encoding as T
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Builder as BB
+--import qualified Data.ByteString.Lazy as BL
+--import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Text as T
 import Criterion.Main
@@ -28,8 +28,8 @@ main = do
         ]
     , bgroup "times only"
        [
-         bench "chronos" $ nfIO $ BL.toStrict . BB.toLazyByteString <$> ioDateC tz
-       , bench "unix-time" $ nfIO ioDateU
+--         bench "chronos" $ nfIO $ BL.toStrict . BB.toLazyByteString <$> ioDateC tz
+         bench "unix-time" $ nfIO ioDateU
        , bench "data.time" $ nfIO $ B8.pack <$> ioDateD
 #ifdef mingw32_HOST_OS
        , bench "win32-katip" $ nfIO $ T.encodeUtf8 <$> ioDateWin32Katip
@@ -43,8 +43,8 @@ logTime :: TimeZone -> String -> Int -> Benchmark
 logTime !tz !desc !sz =
   bgroup desc
     [
-      bench "chronos" $ nfIO $ runChronos sz tz
-    , bench "unix-time" $ nfIO $ runUnixTime sz
+--      bench "chronos" $ nfIO $ runChronos sz tz
+      bench "unix-time" $ nfIO $ runUnixTime sz
     , bench "data.time" $ nfIO $ runDataTime sz
 #ifdef mingw32_HOST_OS
     , bench "win32-katip" $ nfIO $ runWin32Katip sz
@@ -58,8 +58,8 @@ runit sz fn nm =
   fn Nothing () (LogOpts (Just (File nm True Debug "." )) Nothing Nothing False) $
     forM_ [1::Int .. sz] $ \i -> $logDebug (T.pack (show i) <> "hello world this is a test")
 
-runChronos :: Int -> TimeZone -> IO ()
-runChronos !sz !tz = runit sz (logWithImpl (toLogStr <$> ioDateC tz)) "tst_chronos"
+--runChronos :: Int -> TimeZone -> IO ()
+--runChronos !sz !tz = runit sz (logWithImpl (toLogStr <$> ioDateC tz)) "tst_chronos"
 
 runUnixTime :: Int -> IO ()
 runUnixTime !sz = runit sz (logWithImpl (toLogStr <$> ioDateU)) "tst_unixtime"

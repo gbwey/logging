@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 73c21fb98d4d8d6af5c1ffd5bebbfe722a323fe89791a231b8d1f3c6dde0af4e
+-- hash: 5ad52dfcb20dd1532ff335ac3a9de3114a458098a102b3640ac4c6f8fe4d3e92
 
 name:           logging
 version:        0.1.0.0
@@ -32,7 +32,6 @@ library
       aeson
     , base >=4.7 && <5
     , bytestring
-    , chronos >=1.1.1
     , clock
     , dhall >=1.32.0
     , directory
@@ -57,6 +56,8 @@ library
   if os(windows)
     build-depends:
         Win32 >=2.2 && <2.9
+  if impl(ghc >= 8.8)
+    ghc-options: -fwrite-ide-info -hiedir=.hie
   default-language: Haskell2010
 
 executable perflog
@@ -70,7 +71,6 @@ executable perflog
       aeson
     , base
     , bytestring
-    , chronos >=1.1.1
     , clock
     , criterion
     , dhall >=1.32.0
@@ -97,6 +97,8 @@ executable perflog
   if os(windows)
     build-depends:
         Win32 >=2.2 && <2.9
+  if impl(ghc >= 8.8)
+    ghc-options: -fwrite-ide-info -hiedir=.hie
   default-language: Haskell2010
 
 test-suite logging-test
@@ -110,7 +112,6 @@ test-suite logging-test
       aeson
     , base
     , bytestring
-    , chronos >=1.1.1
     , clock
     , dhall >=1.32.0
     , directory
@@ -138,4 +139,6 @@ test-suite logging-test
   if os(windows)
     build-depends:
         Win32 >=2.2 && <2.9
+  if impl(ghc >= 8.8)
+    ghc-options: -fwrite-ide-info -hiedir=.hie
   default-language: Haskell2010

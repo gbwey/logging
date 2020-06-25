@@ -15,7 +15,6 @@ dependencies:
   - aeson
   - base >= 4.7 && < 5
   - bytestring
-  - chronos >= 1.1.1
   - clock
   - dhall >= 1.32.0
   - directory
@@ -45,21 +44,28 @@ library:
   source-dirs: src
   ghc-options:
   - -O2
+  when:
+     condition: impl(ghc >= 8.8)
+     ghc-options:
+     - -fwrite-ide-info
+     - -hiedir=.hie
 
 executables:
   perflog:
     source-dirs:
-#    - src
     - app
     main:             Main.hs
     ghc-options:
-#    - -threaded
     - -O2
+    when:
+       condition: impl(ghc >= 8.8)
+       ghc-options:
+       - -fwrite-ide-info
+       - -hiedir=.hie
     dependencies:
     - base
     - logging
     - criterion
-#    - gauge
 
 tests:
   logging-test:
@@ -72,6 +78,11 @@ tests:
 #    - -rtsopts
 #    - -with-rtsopts=-N
 #    - -fomit-interface-pragmas
+    when:
+       condition: impl(ghc >= 8.8)
+       ghc-options:
+       - -fwrite-ide-info
+       - -hiedir=.hie
     dependencies:
     - base
     - logging
