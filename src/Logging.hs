@@ -57,10 +57,10 @@ import System.Environment
 import qualified UnliftIO as U
 import qualified UnliftIO.Exception as UE
 import Data.String
-import qualified GHC.Generics as G
+import qualified GHC.Generics as G (Generic)
 import Data.Maybe
 import Dhall hiding (string,auto,map)
-import qualified Dhall as D
+import qualified Dhall as D (auto)
 import qualified Language.Haskell.TH as TH
 import qualified Language.Haskell.TH.Syntax as TH
 import qualified System.Info as SI
@@ -119,14 +119,14 @@ data Email = Email
        { _eSmtpServer :: !Text
        , _eSmtpTo :: !Text
        , _eSmtpFrom :: !Text
-       } deriving (TH.Lift, Generic, Show)
+       } deriving (TH.Lift, G.Generic, Show)
 
 data LogOpts = LogOpts
        { _lFile :: !(Maybe File)
        , _lScreen :: !(Maybe Screen)
        , _lEmail :: !(Maybe Email)
        , _lDebug :: !Bool
-       } deriving (TH.Lift, Generic, Show)
+       } deriving (TH.Lift, G.Generic, Show)
 
 makeLenses ''LogOpts
 makeLenses ''Email
@@ -292,9 +292,7 @@ ioDateU = do
 {-# INLINEABLE ioDateU #-}
 
 ioDateD :: IO String
-ioDateD = do
-  tm <- getZonedTime
-  return $ formatTime defaultTimeLocale "%FT%T.%3q%z" tm
+ioDateD = formatTime defaultTimeLocale "%FT%T.%3q%z" <$> getZonedTime
 {-# INLINEABLE ioDateD #-}
 
 #ifdef mingw32_HOST_OS
