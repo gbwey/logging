@@ -484,8 +484,8 @@ logx :: LLog -> LogOpts
 logx lvl = logd & lScreen . _Just . sLevel .~ lvl
 
 chk :: LLog -> Maybe LLog -> LogOpts -> LogOpts
-chk deflvl mlvl lo =
-  lo & lScreen ?~ Screen StdOut (fromMaybe deflvl mlvl)
+chk deflvl mlvl =
+  lScreen ?~ Screen StdOut (fromMaybe deflvl mlvl)
 
 hoistEitherM :: MonadIO m => Text -> Either Text a -> m a
 hoistEitherM = hoistEitherMFunc id
