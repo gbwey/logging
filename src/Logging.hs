@@ -77,6 +77,7 @@ import Text.Printf
 #endif
 import qualified DateTA
 import Data.Time.Clock.POSIX
+import Control.DeepSeq (NFData)
 
 newtype GBException = GBException { gbMessage :: Text } deriving (Show,Eq)
 instance E.Exception GBException
@@ -89,12 +90,14 @@ type RL e m a = ReaderT e (LoggingT m) a
 
 data LLog = Debug | Info | Warn | Error deriving (TH.Lift, G.Generic, Show, Eq, Enum, Bounded, Ord)
 makePrisms ''LLog
+instance NFData LLog
 instance FromDhall LLog
 instance ToDhall LLog
 
 -- | log to the screen
 data ScreenType = StdOut | StdErr deriving (TH.Lift, Show, Eq, G.Generic, Enum, Bounded, Ord)
 makePrisms ''ScreenType
+instance NFData ScreenType
 instance FromDhall ScreenType
 instance ToDhall ScreenType
 
@@ -104,6 +107,7 @@ data Screen = Screen {
     } deriving (TH.Lift, Show, Eq, G.Generic)
 
 makeLenses ''Screen
+instance NFData Screen
 
 -- | log to a file
 data File = File {
@@ -114,6 +118,7 @@ data File = File {
     } deriving (TH.Lift, Show, Eq, G.Generic)
 
 makeLenses ''File
+instance NFData File
 
 data Email = Email
        { _eSmtpServer :: !Text
@@ -130,6 +135,9 @@ data LogOpts = LogOpts
 
 makeLenses ''LogOpts
 makeLenses ''Email
+
+instance NFData LogOpts
+instance NFData Email
 
 instance ToText LogOpts where
   toText = TLB.fromText . T.pack . show

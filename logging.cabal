@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5ad52dfcb20dd1532ff335ac3a9de3114a458098a102b3640ac4c6f8fe4d3e92
+-- hash: 7dc90093849fa54ece4d998cea880e92027cddb4db7f40a8fb0f7fc665c6fe2f
 
 name:           logging
 version:        0.1.0.0
@@ -33,6 +33,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , clock
+    , deepseq
     , dhall >=1.32.0
     , directory
     , either
@@ -73,6 +74,7 @@ executable perflog
     , bytestring
     , clock
     , criterion
+    , deepseq
     , dhall >=1.32.0
     , directory
     , either
@@ -113,6 +115,7 @@ test-suite logging-test
     , base
     , bytestring
     , clock
+    , deepseq
     , dhall >=1.32.0
     , directory
     , either

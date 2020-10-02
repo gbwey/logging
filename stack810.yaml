@@ -10,7 +10,3 @@ extra-deps:
 - smtp-mail-0.2.0.0
 - repline-0.4.0.0@sha256:3324479e497d27c40c3d4762bffc52058f9921621d20d2947dcf9a554b94cd0d,2253
 - haskeline-0.8.1.0@sha256:6a6158c90b929ce7aa5331ff5e9819aa32c7df8f4a7ba324b3cc055ee96b48cb,5818
-
-ghc-options:
-  "$locals": -fwrite-ide-info
-  "$everything": -haddock

@@ -16,6 +16,7 @@ dependencies:
   - base >= 4.7 && < 5
   - bytestring
   - clock
+  - deepseq
   - dhall >= 1.32.0
   - directory
   - either
