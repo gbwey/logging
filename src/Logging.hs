@@ -32,51 +32,63 @@ Allows you to log to a file or the screen or both
 module Logging where
 import qualified Data.UnixTime as UT
 import Data.Time
-import System.Clock
+import System.Clock ( getTime, Clock(Monotonic), TimeSpec(sec) )
 import qualified Data.Text.Lazy.Builder as TLB
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text as T
+import Data.Text (Text)
 import qualified Data.Text.IO as T
 import qualified Data.Text.Encoding as T
-import Data.Text (Text)
 import Control.Monad.Reader
+    (when, MonadIO(..), unless, MonadReader, ReaderT(runReaderT))
 import qualified Control.Exception as E
 import Control.Monad.Logger
 import System.Log.FastLogger
+    ( defaultBufSize,
+      newFileLoggerSet,
+      pushLogStr,
+      rmLoggerSet,
+      LoggerSet )
 import qualified Data.ByteString.Char8 as B
-import Text.Shakespeare.Text
-import Formatting
+import Text.Shakespeare.Text (st, ToText(..))
+import Formatting ( string, (%), formatToString, Format )
 import qualified Formatting.Time as F
-import System.IO
+import System.IO ( Handle, stdout, stderr )
 import Control.Lens
-import Data.Time.Lens
+import Data.Time.Lens (seconds, Timeable)
 import System.Time.Extra (showDuration)
-import Network.Mail.SMTP
-import Network.Mail.Mime hiding (simpleMail)
-import System.Environment
+import Network.Mail.SMTP ( sendMail, simpleMail )
+import Network.Mail.Mime ( plainPart )
+import System.Environment ( getEnvironment )
 import qualified UnliftIO as U
 import qualified UnliftIO.Exception as UE
-import Data.String
+import Data.String ( IsString(fromString) )
 import qualified GHC.Generics as G (Generic)
-import Data.Maybe
-import Dhall hiding (string,auto,map)
+import Data.Maybe ( maybe, fromMaybe )
+import Dhall
+    ( defaultInterpretOptions,
+      genericAutoWith,
+      genericToDhallWith,
+      input,
+      Decoder,
+      FromDhall(..),
+      InterpretOptions(fieldModifier),
+      ToDhall(..) )
 import qualified Dhall as D (auto)
 import qualified Language.Haskell.TH as TH
 import qualified Language.Haskell.TH.Syntax as TH
 import qualified System.Info as SI
-import Data.Char
+import Data.Char (ord, isSpace, toLower)
 import Data.List (foldl', dropWhileEnd, isInfixOf)
-import System.Directory
+import System.Directory (doesDirectoryExist)
 import Numeric (showHex)
---import qualified Data.ByteString.Builder as BB
---import qualified Chronos as C
 #ifdef mingw32_HOST_OS
 import qualified System.Win32.Time as W32
 import System.Win32.Time (SYSTEMTIME(..))
-import Text.Printf
+import Text.Printf (printf)
 #endif
 import qualified DateTA
-import Data.Time.Clock.POSIX
+import Data.Time.Clock.POSIX (getPOSIXTime, posixSecondsToUTCTime)
 import Control.DeepSeq (NFData)
 
 newtype GBException = GBException { gbMessage :: Text } deriving (Show,Eq)

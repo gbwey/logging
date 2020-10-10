@@ -12,9 +12,9 @@ import           Data.Word               (Word16)
 #ifdef mingw32_HOST_OS
 import System.Win32.Time (SYSTEMTIME(..))
 #endif
-import Data.Fixed
+import Data.Fixed (div', divMod')
 import Data.Time
-import Data.Time.Clock.POSIX
+import Data.Time.Clock.POSIX (getPOSIXTime, posixSecondsToUTCTime)
 
 ioDatePosixKatip :: TimeZone -> IO Text
 ioDatePosixKatip tz = do
