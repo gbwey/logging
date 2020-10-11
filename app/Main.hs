@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE BangPatterns #-}
-{-# OPTIONS -Wall #-}
 import Control.Monad.Logger
 import Control.Monad
 import Logging

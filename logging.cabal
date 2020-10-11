@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7dc90093849fa54ece4d998cea880e92027cddb4db7f40a8fb0f7fc665c6fe2f
+-- hash: ad70b86b133bfa24782be9d57a3667f8dbf32f3a04650da0c67b20442f827ce1
 
 name:           logging
 version:        0.1.0.0
@@ -27,7 +27,7 @@ library
       Paths_logging
   hs-source-dirs:
       src
-  ghc-options: -O2
+  ghc-options: -O2 -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns
   build-depends:
       aeson
     , base >=4.7 && <5
@@ -67,7 +67,7 @@ executable perflog
       Paths_logging
   hs-source-dirs:
       app
-  ghc-options: -O2
+  ghc-options: -O2 -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns
   build-depends:
       aeson
     , base
@@ -110,6 +110,7 @@ test-suite logging-test
       Paths_logging
   hs-source-dirs:
       test
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns
   build-depends:
       aeson
     , base

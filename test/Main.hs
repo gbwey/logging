@@ -1,5 +1,4 @@
 -- staticDhallExpression checks for syntax only! doesnt load into haskell type
-{-# OPTIONS -Wall #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}

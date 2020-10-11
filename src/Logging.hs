@@ -1,4 +1,3 @@
-{-# OPTIONS -Wall #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE CPP #-}

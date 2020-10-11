@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# OPTIONS -Wall #-}
 module DateTA where
 import           Control.Monad.ST        (ST)
 import qualified Data.Text.Array         as TA
