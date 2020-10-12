@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ad70b86b133bfa24782be9d57a3667f8dbf32f3a04650da0c67b20442f827ce1
+-- hash: 663ceed08789cd519f403b51cf30725c4fcc46418846448e8afcf07ba050f64e
 
 name:           logging
 version:        0.1.0.0
@@ -27,7 +27,7 @@ library
       Paths_logging
   hs-source-dirs:
       src
-  ghc-options: -O2 -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns
+  ghc-options: -O2 -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -Wredundant-constraints
   build-depends:
       aeson
     , base >=4.7 && <5
@@ -67,7 +67,7 @@ executable perflog
       Paths_logging
   hs-source-dirs:
       app
-  ghc-options: -O2 -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns
+  ghc-options: -O2 -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -Wredundant-constraints
   build-depends:
       aeson
     , base
@@ -110,7 +110,7 @@ test-suite logging-test
       Paths_logging
   hs-source-dirs:
       test
-  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -Wredundant-constraints
   build-depends:
       aeson
     , base
