@@ -92,7 +92,7 @@ writeDay buf off yr m d =
     TA.unsafeWrite buf (off + 9) d2
     return (off + 10)
   where
-    (y1, ya) = fromIntegral (abs yr) `quotRem` 1000
+    (y1, ya) = abs yr `quotRem` 1000
     (y2, yb) = ya `quotRem` 100
     (y3, y4) = yb `quotRem` 10
     T m1 m2  = twoDigits m
@@ -136,7 +136,7 @@ twoDigits a     = T (digit hi) (digit lo)
   where (hi,lo) = a `quotRem` 10
 
 digit :: Word16 -> Word16
-digit x = fromIntegral (x + 48)
+digit x = x + 48
 
 -- | Writes the @YYYY-MM-DD@ part of timestamp
 writeDayFile :: TA.MArray s -> Int -> Word16 -> Word16 -> Word16 -> ST s Int
@@ -152,7 +152,7 @@ writeDayFile buf off yr m d =
     TA.unsafeWrite buf (off + 7) d2
     return (off + 8)
   where
-    (y1, ya) = fromIntegral (abs yr) `quotRem` 1000
+    (y1, ya) = abs yr `quotRem` 1000
     (y2, yb) = ya `quotRem` 100
     (y3, y4) = yb `quotRem` 10
     T m1 m2  = twoDigits m

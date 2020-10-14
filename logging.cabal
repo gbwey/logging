@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 663ceed08789cd519f403b51cf30725c4fcc46418846448e8afcf07ba050f64e
+-- hash: 796a7644a71f073d683e731c4e7debed05393069a9f582d1be5f9fadb2a08368
 
 name:           logging
 version:        0.1.0.0
@@ -58,7 +58,7 @@ library
     build-depends:
         Win32 >=2.2 && <2.9
   if impl(ghc >= 8.8)
-    ghc-options: -fwrite-ide-info -hiedir=.hie
+    ghc-options: -fwrite-ide-info -hiedir=.hie -Widentities
   default-language: Haskell2010
 
 executable perflog
@@ -100,7 +100,7 @@ executable perflog
     build-depends:
         Win32 >=2.2 && <2.9
   if impl(ghc >= 8.8)
-    ghc-options: -fwrite-ide-info -hiedir=.hie
+    ghc-options: -fwrite-ide-info -hiedir=.hie -Widentities
   default-language: Haskell2010
 
 test-suite logging-test
@@ -144,5 +144,5 @@ test-suite logging-test
     build-depends:
         Win32 >=2.2 && <2.9
   if impl(ghc >= 8.8)
-    ghc-options: -fwrite-ide-info -hiedir=.hie
+    ghc-options: -fwrite-ide-info -hiedir=.hie -Widentities
   default-language: Haskell2010

@@ -57,6 +57,7 @@ library:
      ghc-options:
      - -fwrite-ide-info
      - -hiedir=.hie
+     - -Widentities
 
 executables:
   perflog:
@@ -77,6 +78,7 @@ executables:
        ghc-options:
        - -fwrite-ide-info
        - -hiedir=.hie
+       - -Widentities
     dependencies:
     - base
     - logging
@@ -100,6 +102,7 @@ tests:
        ghc-options:
        - -fwrite-ide-info
        - -hiedir=.hie
+       - -Widentities
     dependencies:
     - base
     - logging
