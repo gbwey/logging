@@ -23,7 +23,6 @@ Module      : Logging
 Description : Utility methods
 Copyright   : (c) Grant Weyburne, 2016
 License     : GPL-3
-Maintainer  : gbwey9@gmail.com
 
 Mainly has various logging functions and timing of commands.
 Allows you to log to a file or the screen or both
@@ -386,7 +385,7 @@ timeCommand' callback txt cmd = do
     $logInfo msg
     a <- liftIO $ getTime Monotonic
     return (c,c1,a)
-  (ret :: Either E.SomeException a) <- UE.try $ cmd >>= \x -> return $! x
+  ret <- UE.try @_ @E.SomeException $ cmd >>= \x -> return $! x
   do
     b <- liftIO $ getTime Monotonic
     d <- liftIO UT.getUnixTime

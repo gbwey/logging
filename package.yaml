@@ -4,10 +4,8 @@ version:             0.1.0.0
 #description:
 homepage:            https://github.com/gbwey/logging#readme
 license:             BSD3
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2018 Author name here
-category:            Web
+copyright:           2018 Grant Weyburne
+category:            Logging
 extra-source-files:
 - README.md
 
@@ -44,7 +42,6 @@ when:
 library:
   source-dirs: src
   ghc-options:
-  - -O2
   - -Wall
   - -Wcompat
   - -Wincomplete-record-updates

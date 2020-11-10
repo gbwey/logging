@@ -4,15 +4,13 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 796a7644a71f073d683e731c4e7debed05393069a9f582d1be5f9fadb2a08368
+-- hash: 843b82f696ff34230bfcb980bd304a6944d4f82abcf7be51f2d11064533cca87
 
 name:           logging
 version:        0.1.0.0
-category:       Web
+category:       Logging
 homepage:       https://github.com/gbwey/logging#readme
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2018 Author name here
+copyright:      2018 Grant Weyburne
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -27,7 +25,7 @@ library
       Paths_logging
   hs-source-dirs:
       src
-  ghc-options: -O2 -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -Wredundant-constraints
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -Wredundant-constraints
   build-depends:
       aeson
     , base >=4.7 && <5
